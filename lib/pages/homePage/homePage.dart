@@ -31,6 +31,7 @@ class _HomePageState extends State<HomePage> {
           child: AspectRatio(
             aspectRatio: 1,
             child: Container(
+              clipBehavior: Clip.antiAlias,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -45,11 +46,24 @@ class _HomePageState extends State<HomePage> {
                   )
                 ],
               ),
-              child: Center(
-                child: CustomPaint(
-                  painter: ClockPainter(context),
-                ),
-              ),
+              child: LayoutBuilder(builder: (context, constraints) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Image.asset("assets/images/clock-face.jpeg"),
+                    Transform.rotate(
+                      angle: -pi / 2,
+                      child: CustomPaint(
+                        size: Size(
+                          constraints.maxWidth,
+                          constraints.maxHeight,
+                        ),
+                        painter: ClockPainter(context),
+                      ),
+                    ),
+                  ],
+                );
+              }),
             ),
           ),
         ),
@@ -65,71 +79,63 @@ class ClockPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final dateTime = DateTime.now();
-    double centerX = size.width / 2;
-    double centerY = size.height / 2;
-    Offset center = Offset(centerX, centerY);
+    var centerX = size.width / 2;
+    var centerY = size.height / 2;
+    var center = Offset(centerX, centerY);
+    var radius = centerY;
 
-    // Minute Calculation
-    double minX =
-        centerX + size.width * 0.35 * cos((dateTime.minute * 6) * pi / 180);
-    double minY =
-        centerY + size.width * 0.35 * sin((dateTime.minute * 6) * pi / 180);
+    var outlineBrush = Paint()
+      ..color = Color(0xFFEAECFF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 16;
 
-    //Minute Line
-    canvas.drawLine(
-      center,
-      Offset(minX, minY),
-      Paint()
-        ..color = Colors.red
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 10,
-    );
+    var centerFillBrush = Paint()..color = Color(0xFFEAECFF);
 
-    // Hour Calculation
-    // dateTime.hour * 30 because 360/12 = 30
-    // dateTime.minute * 0.5 each minute we want to turn our hour line a little
-    double hourX = centerX +
+    var secHandBrush = Paint()
+      ..color = Colors.orange[300] as Color
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 5;
+
+    var minHandBrush = Paint()
+      ..shader = RadialGradient(colors: [Color(0xFF748EF6), Color(0xFF77DDFF)])
+          .createShader(Rect.fromCircle(center: center, radius: radius))
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 8;
+
+    var hourHandBrush = Paint()
+      ..shader = RadialGradient(colors: [Color(0xFFEA74AB), Color(0xFFC279FB)])
+          .createShader(Rect.fromCircle(center: center, radius: radius))
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 12;
+
+    var hourHandX = centerX +
         size.width *
-            0.3 *
+            .175 *
             cos((dateTime.hour * 30 + dateTime.minute * 0.5) * pi / 180);
-    double hourY = centerY +
-        size.width *
-            0.3 *
+    var hourHandY = centerY +
+        size.height *
+            .175 *
             sin((dateTime.hour * 30 + dateTime.minute * 0.5) * pi / 180);
+    canvas.drawLine(center, Offset(hourHandX, hourHandY), hourHandBrush);
 
-    // hour Line
-    canvas.drawLine(
-      center,
-      Offset(hourX, hourY),
-      Paint()
-        ..color = Theme.of(context).colorScheme.secondary
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 10,
-    );
+    var minHandX =
+        centerX + size.width * .25 * cos(dateTime.minute * 6 * pi / 180);
+    var minHandY =
+        centerY + size.height * .25 * sin(dateTime.minute * 6 * pi / 180);
+    canvas.drawLine(center, Offset(minHandX, minHandY), minHandBrush);
 
-    // Second Calculation
-    // size.width * 0.4 define our line height
-    // dateTime.second * 6 because 360 / 60 = 6
-    double secondX =
-        centerX + size.width * 0.4 * cos((dateTime.second * 6) * pi / 180);
-    double secondY =
-        centerY + size.width * 0.4 * sin((dateTime.second * 6) * pi / 180);
-
-    // Second Line
-    canvas.drawLine(center, Offset(secondX, secondY),
-        Paint()..color = Theme.of(context).primaryColor);
-
-// center Dots
-    Paint dotPainter = Paint()..color = Colors.blue;
-    canvas.drawCircle(center, 24, dotPainter);
-    canvas.drawCircle(
-      center,
-      23,
-      Paint()..color = Theme.of(context).backgroundColor,
-    );
-    canvas.drawCircle(center, 10, dotPainter);
+    var secHandX =
+        centerX + size.width * .3 * cos(dateTime.second * 6 * pi / 180);
+    var secHandY =
+        centerY + size.height * .3 * sin(dateTime.second * 6 * pi / 180);
+    canvas.drawLine(center, Offset(secHandX, secHandY), secHandBrush);
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
+  }
 }
